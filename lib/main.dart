@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // 1. Πακέτο Firebase
 import 'firebase_options.dart'; // 2. Τα κλειδιά που μόλις φτιάξαμε
 import 'features/auth/presentation/login_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Κάνουμε τη main "async" για να περιμένει τη σύνδεση
 void main() async {
@@ -13,7 +14,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
