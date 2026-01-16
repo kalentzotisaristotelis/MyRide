@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "153999808834",
+    "project_id": "myride-4673d",
+    "storage_bucket": "myride-4673d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153999808834:android:3ea0db8dad5a15202390db",
+        "android_client_info": {
+          "package_name": "com.telis.myride.my_ride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEtPf-4M28zCyFgGaZbWbhSSFgdHonL2U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
