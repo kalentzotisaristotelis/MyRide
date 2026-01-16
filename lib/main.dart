@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // 1. Πακέτο Firebase
 import 'firebase_options.dart'; // 2. Τα κλειδιά που μόλις φτιάξαμε
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'features/auth/presentation/auth_wrapper.dart';
+import 'features/auth/view/auth_wrapper.dart';
 
 // Κάνουμε τη main "async" για να περιμένει τη σύνδεση
 void main() async {

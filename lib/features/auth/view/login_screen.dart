@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_controller.dart';
-import '../../dashboard/presentation/dashboard_screen.dart';
+import '../../dashboard/view/dashboard_screen.dart';
 
 // ΑΛΛΑΓΗ 1: Έγινε ConsumerStatefulWidget για να "ακούει" Riverpod
 class LoginScreen extends ConsumerStatefulWidget {

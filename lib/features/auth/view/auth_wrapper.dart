@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../dashboard/presentation/dashboard_screen.dart';
+import '../../../main_screen.dart';
+import '../../dashboard/view/dashboard_screen.dart';
 import 'login_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
@@ -21,7 +22,7 @@ class AuthWrapper extends StatelessWidget {
 
         // 2. Αν έχουμε δεδομένα (υπάρχει χρήστης), δείξε το Dashboard
         if (snapshot.hasData) {
-          return const DashboardScreen();
+          return const MainScreen();
         }
 
         // 3. Αν δεν υπάρχει χρήστης, δείξε το Login
