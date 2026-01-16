@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_controller.dart';
+import '../../dashboard/presentation/dashboard_screen.dart';
 
 // ΑΛΛΑΓΗ 1: Έγινε ConsumerStatefulWidget για να "ακούει" Riverpod
 class LoginScreen extends ConsumerStatefulWidget {
@@ -47,10 +48,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             backgroundColor: Colors.red,
           ),
         );
-      }
-      // Αν πέτυχε (δεν έχει λάθος και δεν φορτώνει), εδώ θα βάλουμε πλοήγηση μετά
-      if (!next.isLoading && !next.hasError && next.hasValue) {
-        print("LOGIN SUCCESS!"); // Προσωρινό, για να το δούμε στην κονσόλα
       }
     });
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // 1. Πακέτο Firebase
 import 'firebase_options.dart'; // 2. Τα κλειδιά που μόλις φτιάξαμε
-import 'features/auth/presentation/login_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'features/auth/presentation/auth_wrapper.dart';
 
 // Κάνουμε τη main "async" για να περιμένει τη σύνδεση
 void main() async {
@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: const AuthWrapper(),
     );
   }
 }
