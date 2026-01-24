@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controller/garage_controller.dart';
 import 'add_bike_screen.dart';
+import 'edit_bike_screen.dart';
 
 // ΑΛΛΑΓΗ: Έγινε ConsumerWidget
 class GarageScreen extends ConsumerWidget {
@@ -100,6 +101,13 @@ class GarageScreen extends ConsumerWidget {
                     ),
                     subtitle: Text('${bike.year} • ${bike.cc.toInt()}cc'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => EditBikeScreen(bike: bike),
+                        ),
+                      );
+                    },
                   ),
                 ),
               );

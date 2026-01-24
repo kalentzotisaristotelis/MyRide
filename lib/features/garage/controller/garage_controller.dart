@@ -59,4 +59,34 @@ class GarageController extends StateNotifier<AsyncValue<void>> {
       rethrow;
     }
   }
+  // Σωστή μέθοδος για τον Controller
+  Future<void> updateBike({
+    required String bikeId,
+    required String userId,
+    required String make,
+    required String model,
+    required int year,
+    required double cc,
+  }) async {
+    state = const AsyncValue.loading(); // Δείχνουμε ότι φορτώνει
+
+    try {
+      // 1. Φτιάχνουμε το αντικείμενο Bike με τα νέα στοιχεία
+      final updatedBike = Bike(
+        id: bikeId,
+        userId: userId,
+        make: make,
+        model: model,
+        year: year,
+        cc: cc,
+      );
+
+      // 2. Ζητάμε από τον REPOSITORY να το στείλει στη βάση
+      await _repository.updateBike(updatedBike);
+
+      state = const AsyncValue.data(null); // Όλα καλά
+    } catch (e, st) {
+      state = AsyncValue.error(e, st); // Αν γίνει λάθος
+    }
+  }
 }

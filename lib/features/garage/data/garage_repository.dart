@@ -38,4 +38,15 @@ class GarageRepository {
       }).toList();
     });
   }
+
+  // Ενημέρωση στοιχείων υπάρχουσας μηχανής
+  Future<void> updateBike(Bike bike) async {
+    try {
+      // Χρησιμοποιούμε το bike.id για να βρούμε ποιο έγγραφο θα αλλάξουμε
+      // Το .update() αλλάζει ΜΟΝΟ τα πεδία που του δίνουμε
+      await _firestore.collection('bikes').doc(bike.id).update(bike.toMap());
+    } catch (e) {
+      throw 'Failed to update bike: $e';
+    }
+  }
 }
