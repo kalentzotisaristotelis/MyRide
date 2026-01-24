@@ -87,27 +87,67 @@ class GarageScreen extends ConsumerWidget {
                 },
 
                 // Εδώ είναι η κάρτα που είχαμε πριν
-                child: Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.deepOrange.shade100,
-                      child: const Icon(Icons.motorcycle, color: Colors.deepOrange),
-                    ),
-                    title: Text(
-                      '${bike.make} ${bike.model}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text('${bike.year} • ${bike.cc.toInt()}cc'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => EditBikeScreen(bike: bike),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.3),
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Banner(
+                      message: "${bike.cc.toInt()}cc",
+                      location: BannerLocation.topEnd,
+                      color: Colors.deepOrange,
+                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            left: BorderSide(color: Colors.deepOrange, width: 6), // Η πορτοκαλί ρίγα
+                          ),
                         ),
-                      );
-                    },
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.two_wheeler, color: Colors.black87, size: 28),
+                          ),
+                          title: Text(
+                            '${bike.make} ${bike.model}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 6.0),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text('${bike.year}', style: const TextStyle(color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                          trailing: const Icon(Icons.edit, color: Colors.deepOrange),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => EditBikeScreen(bike: bike),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               );

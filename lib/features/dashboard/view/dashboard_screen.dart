@@ -73,7 +73,7 @@ class _StatCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
-  final Color color;
+  final Color color; // Αυτό θα είναι το βασικό χρώμα
 
   const _StatCard({
     required this.title,
@@ -84,39 +84,56 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Row(
-          children: [
-            // Στρογγυλό εικονίδιο
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1), // Απαλό χρώμα φόντου
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 30),
-            ),
-            const SizedBox(width: 20),
-
-            // Κείμενα
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ],
+    return Container(
+      width: double.infinity, // Να πιάνει όλο το πλάτος
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        // Gradient φόντο από το χρώμα προς το λίγο πιο ανοιχτό
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white, // Λευκά γράμματα
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          // Ένα μεγάλο εικονίδιο με διαφάνεια για στυλ
+          Icon(
+            icon,
+            color: Colors.white.withOpacity(0.3),
+            size: 60,
+          ),
+        ],
       ),
     );
   }
