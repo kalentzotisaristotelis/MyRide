@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controller/garage_controller.dart';
 import 'add_bike_screen.dart';
 import 'edit_bike_screen.dart';
+import '../../service_history/view/service_history_screen.dart';
 
 // ΑΛΛΑΓΗ: Έγινε ConsumerWidget
 class GarageScreen extends ConsumerWidget {
@@ -137,11 +138,22 @@ class GarageScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          trailing: const Icon(Icons.edit, color: Colors.deepOrange),
+                          // Αλλάζουμε το trailing σε IconButton για το Edit
+                          trailing: IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.deepOrange),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => EditBikeScreen(bike: bike),
+                                ),
+                              );
+                            },
+                          ),
+                          // Όταν πατάς ΟΛΗ την κάρτα, σε πάει στο Ιστορικό
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => EditBikeScreen(bike: bike),
+                                builder: (context) => ServiceHistoryScreen(bike: bike),
                               ),
                             );
                           },
