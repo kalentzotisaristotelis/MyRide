@@ -89,7 +89,20 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
                       controller: _yearController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(labelText: 'Year', border: OutlineInputBorder()),
-                      validator: (val) => val!.isEmpty ? 'Enter year' : null,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) return 'Enter year';
+
+                        // Προσπαθούμε να το κάνουμε ακέραιο αριθμό
+                        final year = int.tryParse(val.trim());
+                        if (year == null) return 'Must be a valid number';
+
+                        // Έλεγχος λογικής (π.χ. όχι μηχανή του 1800 ή του 2050)
+                        final currentYear = DateTime.now().year;
+                        if (year < 1900 || year > currentYear + 1) {
+                          return 'Enter a valid year';
+                        }
+                        return null; // Όλα καλά!
+                      },
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -98,7 +111,16 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
                       controller: _ccController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(labelText: 'CC', border: OutlineInputBorder()),
-                      validator: (val) => val!.isEmpty ? 'Enter CC' : null,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) return 'Enter CC';
+
+                        // Προσπαθούμε να το κάνουμε δεκαδικό αριθμό (double)
+                        final cc = double.tryParse(val.trim());
+                        if (cc == null) return 'Must be a valid number';
+
+                        if (cc <= 0) return 'CC must be greater than 0';
+                        return null; // Όλα καλά!
+                      },
                     ),
                   ),
                 ],

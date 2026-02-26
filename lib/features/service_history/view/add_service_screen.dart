@@ -112,7 +112,15 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.speed),
                 ),
-                validator: (val) => val!.isEmpty ? 'Enter mileage' : null,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Enter mileage';
+
+                  final mileage = int.tryParse(val.trim());
+                  if (mileage == null) return 'Must be a valid number';
+
+                  if (mileage < 0) return 'Mileage cannot be negative';
+                  return null; // Όλα καλά!
+                },
               ),
               const SizedBox(height: 16),
 

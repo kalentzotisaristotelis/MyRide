@@ -1,79 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// Κάνουμε import τον provider που φέρνει τις μηχανές
 import '../../garage/controller/garage_controller.dart';
 
-// 1. Το κάνουμε ConsumerWidget για να "ακούμε" τα δεδομένα
+// ΠΡΟΣΟΧΗ: Το κάναμε ConsumerWidget για να μπορεί να "ακούει"
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 2. Συνδεόμαστε στον ΙΔΙΟ σωλήνα που χρησιμοποιεί και το Garage!
+    // 1. Παρακολουθούμε ζωντανά (stream) τις μηχανές του χρήστη
     final bikesAsyncValue = ref.watch(userBikesProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MyRide Dashboard'),
-        backgroundColor: Colors.deepOrange,
+        title: const Text('My Dashboard'),
+        backgroundColor: Colors.blueGrey, // Ή όποιο χρώμα προτιμάς
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Overview',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+
+      // 2. Ελέγχουμε την κατάσταση των δεδομένων (Loading, Error, Data)
+      body: bikesAsyncValue.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+        data: (bikes) {
+
+          // --- ΥΠΟΛΟΓΙΣΜΟΣ ΠΡΑΓΜΑΤΙΚΩΝ ΣΤΑΤΙΣΤΙΚΩΝ ---
+
+          // Α. Πόσες μηχανές έχουμε;
+          final int totalBikes = bikes.length;
+
+          // Β. Πόσα είναι τα συνολικά κυβικά; (Προσθέτει τα CC όλων των μηχανών)
+          final double totalCc = bikes.fold(0, (sum, bike) => sum + bike.cc);
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Garage Overview',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+
+                // Η κάρτα με το σύνολο των μηχανών
+                _StatCard(
+                  title: 'Total Bikes',
+                  value: totalBikes.toString(),
+                  icon: Icons.two_wheeler,
+                  color: Colors.deepOrange,
+                ),
+                const SizedBox(height: 16),
+
+                // Η κάρτα με τη συνολική δύναμη σε κυβικά (CC)
+                _StatCard(
+                  title: 'Total CC Power',
+                  value: '${totalCc.toInt()} cc',
+                  icon: Icons.speed,
+                  color: Colors.blue,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-
-            // 3. Ελέγχουμε τα δεδομένα
-            bikesAsyncValue.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Text('Error: $err'),
-              data: (bikes) {
-                // 4. Υπολογισμοί (Business Logic στο UI για απλότητα τώρα)
-                final totalBikes = bikes.length;
-
-                // Υπολογισμός συνόλου κυβικών (fold είναι σαν loop που αθροίζει)
-                final totalCC = bikes.fold(0.0, (sum, bike) => sum + bike.cc);
-
-                return Column(
-                  children: [
-                    // Κάρτα 1: Σύνολο Μηχανών
-                    _StatCard(
-                      title: 'Total Bikes',
-                      value: totalBikes.toString(),
-                      icon: Icons.two_wheeler,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Κάρτα 2: Σύνολο Κυβικών
-                    _StatCard(
-                      title: 'Total Power',
-                      value: '${totalCC.toInt()} cc',
-                      icon: Icons.speed,
-                      color: Colors.deepOrange,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-// Ένα μικρό βοηθητικό Widget για να μην γράφουμε τον ίδιο κώδικα 2 φορές
+// Αυτό είναι το ίδιο όμορφο widget που φτιάξαμε την προηγούμενη φορά
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
-  final Color color; // Αυτό θα είναι το βασικό χρώμα
+  final Color color;
 
   const _StatCard({
     required this.title,
@@ -85,10 +86,9 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity, // Να πιάνει όλο το πλάτος
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        // Gradient φόντο από το χρώμα προς το λίγο πιο ανοιχτό
         gradient: LinearGradient(
           colors: [color, color.withOpacity(0.7)],
           begin: Alignment.topLeft,
@@ -114,7 +114,7 @@ class _StatCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white, // Λευκά γράμματα
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 4),
@@ -127,7 +127,6 @@ class _StatCard extends StatelessWidget {
               ),
             ],
           ),
-          // Ένα μεγάλο εικονίδιο με διαφάνεια για στυλ
           Icon(
             icon,
             color: Colors.white.withOpacity(0.3),
