@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/service_repository.dart';
 import '../domain/service_model.dart';
@@ -13,6 +15,24 @@ final serviceControllerProvider = StateNotifierProvider<ServiceController, Async
   return ServiceController(repository);
 });
 
+final totalMaintenanceCostProvider = StreamProvider<double>((ref) {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return Stream.value(0.0);
+
+  return FirebaseFirestore.instance
+      .collection('services')
+      .where('userId', isEqualTo: user.uid) // Φέρε όλα τα service ΜΟΥ
+      .snapshots()
+      .map((snapshot) {
+    double totalCost = 0.0;
+    for (var doc in snapshot.docs) {
+      totalCost += (doc.data()['cost'] as num?)?.toDouble() ?? 0.0;
+    }
+    return totalCost; // Επιστρέφει το τελικό άθροισμα!
+  });
+});
+
+
 class ServiceController extends StateNotifier<AsyncValue<void>> {
   final ServiceRepository _repository;
 
@@ -20,20 +40,24 @@ class ServiceController extends StateNotifier<AsyncValue<void>> {
 
   Future<void> addService({
     required String bikeId,
+    required String userId,
     required String title,
     required DateTime date,
     required int mileage,
     required String notes,
+    required double cost, // ΝΕΟ
   }) async {
     state = const AsyncValue.loading();
     try {
       final service = ServiceRecord(
         id: '', // Το βάζει το Firebase
         bikeId: bikeId,
+        userId: userId,
         title: title,
         date: date,
         mileage: mileage,
         notes: notes,
+        cost: cost,
       );
 
       await _repository.addService(service);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../garage/domain/bike_model.dart';
 import '../controller/service_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddServiceScreen extends ConsumerStatefulWidget {
   final Bike bike; // Χρειαζόμαστε τη μηχανή για να ξέρουμε πού θα μπει το service
@@ -18,6 +19,7 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
   final _titleController = TextEditingController();
   final _mileageController = TextEditingController();
   final _notesController = TextEditingController();
+  final _costController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now(); // Προεπιλογή: Σημερινή μέρα
 
@@ -26,6 +28,7 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
     _titleController.dispose();
     _mileageController.dispose();
     _notesController.dispose();
+    _costController.dispose();
     super.dispose();
   }
 
@@ -45,13 +48,18 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
   }
 
   void _saveService() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     if (_formKey.currentState!.validate()) {
       await ref.read(serviceControllerProvider.notifier).addService(
         bikeId: widget.bike.id,
+        userId: user.uid,
         title: _titleController.text.trim(),
         date: _selectedDate,
         mileage: int.parse(_mileageController.text.trim()),
         notes: _notesController.text.trim(),
+        cost: double.parse(_costController.text.trim()),
       );
 
       if (mounted) {
@@ -120,6 +128,25 @@ class _AddServiceScreenState extends ConsumerState<AddServiceScreen> {
 
                   if (mileage < 0) return 'Mileage cannot be negative';
                   return null; // Όλα καλά!
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // ΝΕΟ: Πεδίο για το Κόστος
+              TextFormField(
+                controller: _costController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Cost (€)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.euro),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Enter cost';
+                  final cost = double.tryParse(val.trim());
+                  if (cost == null) return 'Must be a valid number';
+                  if (cost < 0) return 'Cost cannot be negative';
+                  return null;
                 },
               ),
               const SizedBox(height: 16),

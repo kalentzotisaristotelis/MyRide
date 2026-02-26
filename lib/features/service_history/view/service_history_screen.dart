@@ -60,8 +60,24 @@ class ServiceHistoryScreen extends ConsumerWidget {
                       child: Icon(Icons.build, color: Colors.white, size: 20),
                     ),
                     title: Text(service.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('$dateStr  •  ${service.mileage} km\n${service.notes}'),
-                    isThreeLine: true,
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$dateStr  •  ${service.mileage} km'),
+                        const SizedBox(height: 4),
+                        Text(
+                          '€${service.cost.toStringAsFixed(2)}', // Δείχνει 2 δεκαδικά (π.χ. 45.00)
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (service.notes.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(service.notes, style: const TextStyle(fontStyle: FontStyle.italic)),
+                        ]
+                      ],
+                    ),
                   ),
                 ),
               );
