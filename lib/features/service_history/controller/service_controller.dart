@@ -61,6 +61,18 @@ class ServiceController extends StateNotifier<AsyncValue<void>> {
       );
 
       await _repository.addService(service);
+      final bikeDoc = await FirebaseFirestore.instance.collection('bikes').doc(bikeId).get();
+      final currentMileage = bikeDoc.data()?['mileage'] ?? 0;
+
+      // Αν το service έγινε σε ΠΕΡΙΣΣΟΤΕΡΑ χιλιόμετρα από όσα έχει ήδη η μηχανή, ανανέωσέ τα!
+      if (mileage > currentMileage) {
+        await FirebaseFirestore.instance.collection('bikes').doc(bikeId).update({
+          'mileage': mileage,
+        });
+      }
+      // ------------------------------------------------------
+
+      state = const AsyncValue.data(null);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

@@ -67,6 +67,7 @@ class GarageController extends StateNotifier<AsyncValue<void>> {
     required String model,
     required int year,
     required double cc,
+    required int mileage,
   }) async {
     state = const AsyncValue.loading(); // Δείχνουμε ότι φορτώνει
 
@@ -79,6 +80,7 @@ class GarageController extends StateNotifier<AsyncValue<void>> {
         model: model,
         year: year,
         cc: cc,
+        mileage: mileage,
       );
 
       // 2. Ζητάμε από τον REPOSITORY να το στείλει στη βάση

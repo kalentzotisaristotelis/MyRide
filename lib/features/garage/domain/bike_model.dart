@@ -1,10 +1,11 @@
 class Bike {
   final String id;
-  final String userId; // Ποιανού χρήστη είναι η μηχανή
-  final String make;   // Μάρκα (π.χ. Honda)
-  final String model;  // Μοντέλο (π.χ. CBR)
-  final int year;      // Χρονολογία
-  final double cc;     // Κυβικά
+  final String userId;
+  final String make;
+  final String model;
+  final int year;
+  final double cc;
+  final int mileage; // ΝΕΟ: Ο χιλιομετρητής της μηχανής!
 
   Bike({
     required this.id,
@@ -13,9 +14,9 @@ class Bike {
     required this.model,
     required this.year,
     required this.cc,
+    this.mileage = 0, // Προεπιλογή: 0 χλμ
   });
 
-  // Μετατροπή από δεδομένα Firebase -> σε Αντικείμενο Bike
   factory Bike.fromMap(Map<String, dynamic> map, String documentId) {
     return Bike(
       id: documentId,
@@ -24,10 +25,10 @@ class Bike {
       model: map['model'] ?? '',
       year: map['year']?.toInt() ?? 0,
       cc: map['cc']?.toDouble() ?? 0.0,
+      mileage: map['mileage']?.toInt() ?? 0, // ΝΕΟ
     );
   }
 
-  // Μετατροπή από Αντικείμενο Bike -> σε δεδομένα για Firebase
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -35,6 +36,7 @@ class Bike {
       'model': model,
       'year': year,
       'cc': cc,
+      'mileage': mileage, // ΝΕΟ
     };
   }
 }

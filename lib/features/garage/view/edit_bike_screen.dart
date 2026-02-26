@@ -51,6 +51,7 @@ class _EditBikeScreenState extends ConsumerState<EditBikeScreen> {
         model: _modelController.text.trim(),
         year: int.parse(_yearController.text.trim()),
         cc: double.parse(_ccController.text.trim()),
+        mileage: widget.bike.mileage,
       );
 
       if (mounted) {
