@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../garage/controller/garage_controller.dart';
+import '../../rides/controller/ride_controller.dart';
+import '../../rides/view/add_ride_screen.dart';
+import '../../rides/view/rides_screen.dart';
 import '../../service_history/controller/service_controller.dart';
 
 // ΠΡΟΣΟΧΗ: Το κάναμε ConsumerWidget για να μπορεί να "ακούει"
@@ -12,6 +15,7 @@ class DashboardScreen extends ConsumerWidget {
     // 1. Παρακολουθούμε ζωντανά (stream) τις μηχανές του χρήστη
     final bikesAsyncValue = ref.watch(userBikesProvider);
     final costAsyncValue = ref.watch(totalMaintenanceCostProvider);
+    final ridesAsyncValue = ref.watch(ridesStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -76,6 +80,25 @@ class DashboardScreen extends ConsumerWidget {
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+                ridesAsyncValue.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, st) => Text('Error loading rides: $e'),
+                  data: (rides) {
+                    return _StatCard(
+                      title: 'Community Rides', // Ο τίτλος της κάρτας
+                      value: rides.length.toString(), // Πόσες βόλτες υπάρχουν;
+                      icon: Icons.map, // Ωραίο εικονίδιο χάρτη/βόλτας
+                      color: Colors.indigo, // Το χρώμα της κοινότητας
+                      onTap: () {
+                        // Όταν την πατάς, σε πάει στην οθόνη με τις βόλτες!
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const RidesScreen()),
+                        );
+                      },
+                    );
+                  },
+                ),
               ],
             ),
           );
@@ -91,64 +114,70 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   const _StatCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color, color.withOpacity(0.7)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 16,
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          Icon(
-            icon,
-            color: Colors.white.withOpacity(0.3),
-            size: 60,
-          ),
-        ],
+              ],
+            ),
+            Icon(
+              icon,
+              color: Colors.white.withOpacity(0.3),
+              size: 60,
+            ),
+          ],
+        ),
       ),
     );
   }
