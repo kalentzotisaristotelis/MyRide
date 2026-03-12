@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../garage/controller/garage_controller.dart';
+import '../../profile/controller/user_controller.dart';
+import '../../profile/view/edit_profile_screen.dart';
 import '../../rides/controller/ride_controller.dart';
 import '../../rides/view/add_ride_screen.dart';
 import '../../rides/view/rides_screen.dart';
@@ -16,12 +18,28 @@ class DashboardScreen extends ConsumerWidget {
     final bikesAsyncValue = ref.watch(userBikesProvider);
     final costAsyncValue = ref.watch(totalMaintenanceCostProvider);
     final ridesAsyncValue = ref.watch(ridesStreamProvider);
+    final profileAsyncValue = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Dashboard'),
-        backgroundColor: Colors.blueGrey, // Ή όποιο χρώμα προτιμάς
+        backgroundColor: Colors.blueGrey,
         foregroundColor: Colors.white,
+        actions: [
+          // Κουμπάκι για το Προφίλ!
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () async {
+              // Διαβάζουμε το τωρινό μας προφίλ πριν ανοίξουμε την οθόνη
+              final currentProfile = profileAsyncValue.valueOrNull;
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => EditProfileScreen(existingProfile: currentProfile),
+                ),
+              );
+            },
+          ),
+        ],
       ),
 
       // 2. Ελέγχουμε την κατάσταση των δεδομένων (Loading, Error, Data)
