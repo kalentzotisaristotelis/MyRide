@@ -47,4 +47,12 @@ class RideRepository {
       throw 'Failed to update participation: $e';
     }
   }
+  // 4. Διαγραφή βόλτας
+  Future<void> deleteRide(String rideId) async {
+    try {
+      await _firestore.collection('rides').doc(rideId).delete();
+    } catch (e) {
+      throw 'Failed to delete ride: $e';
+    }
+  }
 }

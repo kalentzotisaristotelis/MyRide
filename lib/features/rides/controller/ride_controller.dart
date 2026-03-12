@@ -59,4 +59,14 @@ class RideController extends StateNotifier<AsyncValue<void>> {
       print("Error updating participation: $e");
     }
   }
+  // Συνάρτηση για οριστική διαγραφή (Ακύρωση)
+  Future<void> deleteRide(String rideId) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.deleteRide(rideId);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }
