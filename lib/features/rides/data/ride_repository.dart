@@ -29,4 +29,22 @@ class RideRepository {
       }).toList();
     });
   }
+  // 3. Προσθήκη ή αφαίρεση συμμετοχής (RSVP)
+  Future<void> toggleParticipation(String rideId, String userId, bool isGoing) async {
+    try {
+      if (isGoing) {
+        // Αν πάει, τον προσθέτουμε στη λίστα (χωρίς να διπλοτυπωθεί)
+        await _firestore.collection('rides').doc(rideId).update({
+          'participants': FieldValue.arrayUnion([userId])
+        });
+      } else {
+        // Αν το ακυρώσει, τον βγάζουμε από τη λίστα
+        await _firestore.collection('rides').doc(rideId).update({
+          'participants': FieldValue.arrayRemove([userId])
+        });
+      }
+    } catch (e) {
+      throw 'Failed to update participation: $e';
+    }
+  }
 }

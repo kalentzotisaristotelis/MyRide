@@ -47,4 +47,16 @@ class RideController extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
     }
   }
+  // Συνάρτηση για Συμμετοχή / Ακύρωση
+  Future<void> toggleParticipation({
+    required String rideId,
+    required String userId,
+    required bool isGoing,
+  }) async {
+    try {
+      await _repository.toggleParticipation(rideId, userId, isGoing);
+    } catch (e) {
+      print("Error updating participation: $e");
+    }
+  }
 }

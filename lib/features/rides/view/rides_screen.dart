@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:my_ride/features/rides/view/ride_details_screen.dart';
 import '../controller/ride_controller.dart';
 import 'add_ride_screen.dart';
 
@@ -102,7 +103,11 @@ class RidesScreen extends ConsumerWidget {
                           // Εδώ αργότερα θα βάλουμε το κουμπί "Θα πάω!" (RSVP)
                           TextButton(
                             onPressed: () {
-                              // TODO: Άνοιγμα λεπτομερειών βόλτας
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => RideDetailsScreen(ride: ride),
+                                ),
+                              );
                             },
                             child: const Text('DETAILS'),
                           )
