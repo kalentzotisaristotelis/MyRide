@@ -12,6 +12,11 @@ final currentUserProfileProvider = FutureProvider<AppUser?>((ref) async {
   return repository.getUserProfile(user.uid);
 });
 
+final userProfileProvider = FutureProvider.family<AppUser?, String>((ref, userId) async {
+  final repository = ref.watch(userRepositoryProvider);
+  return repository.getUserProfile(userId);
+});
+
 // 2. Controller για την αποθήκευση/αλλαγή των στοιχείων
 final userControllerProvider = StateNotifierProvider<UserController, AsyncValue<void>>((ref) {
   final repository = ref.watch(userRepositoryProvider);
