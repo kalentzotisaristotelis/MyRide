@@ -27,7 +27,11 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.telis.myride.my_ride"
-    compileSdkVersion flutter.compileSdkVersion
+
+    // --- Η ΜΕΓΑΛΗ ΑΛΛΑΓΗ ΕΙΝΑΙ ΕΔΩ! ---
+    compileSdkVersion 34
+    // ----------------------------------
+
     ndkVersion flutter.ndkVersion
 
     compileOptions {

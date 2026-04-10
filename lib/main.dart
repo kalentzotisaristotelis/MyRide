@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // 1. Πακέτο Firebase
+import 'core/notification_service.dart';
 import 'firebase_options.dart'; // 2. Τα κλειδιά που μόλις φτιάξαμε
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/auth/view/auth_wrapper.dart';
@@ -13,6 +14,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await NotificationService().initNotifications();
 
   runApp(const ProviderScope(child: MyApp()));
 }
