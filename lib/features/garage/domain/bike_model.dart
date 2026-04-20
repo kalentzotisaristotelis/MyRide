@@ -5,7 +5,8 @@ class Bike {
   final String model;
   final int year;
   final double cc;
-  final int mileage; // ΝΕΟ: Ο χιλιομετρητής της μηχανής!
+  final int mileage;
+  final String? imageUrl; // ΝΕΟ: Το URL της φωτογραφίας της μηχανής
 
   Bike({
     required this.id,
@@ -14,7 +15,8 @@ class Bike {
     required this.model,
     required this.year,
     required this.cc,
-    this.mileage = 0, // Προεπιλογή: 0 χλμ
+    this.mileage = 0,
+    this.imageUrl, // Προσθήκη στον constructor
   });
 
   factory Bike.fromMap(Map<String, dynamic> map, String documentId) {
@@ -25,7 +27,8 @@ class Bike {
       model: map['model'] ?? '',
       year: map['year']?.toInt() ?? 0,
       cc: map['cc']?.toDouble() ?? 0.0,
-      mileage: map['mileage']?.toInt() ?? 0, // ΝΕΟ
+      mileage: map['mileage']?.toInt() ?? 0,
+      imageUrl: map['imageUrl'], // Διάβασμα από το Firebase
     );
   }
 
@@ -36,7 +39,8 @@ class Bike {
       'model': model,
       'year': year,
       'cc': cc,
-      'mileage': mileage, // ΝΕΟ
+      'mileage': mileage,
+      'imageUrl': imageUrl, // Αποθήκευση στο Firebase
     };
   }
 }

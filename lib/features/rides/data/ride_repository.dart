@@ -21,7 +21,7 @@ class RideRepository {
   Stream<List<Ride>> getRides() {
     return _firestore
         .collection('rides')
-        .orderBy('date', descending: false) // Οι πιο κοντινές ημερομηνίες πρώτα!
+        .orderBy('date', descending: false)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -29,24 +29,50 @@ class RideRepository {
       }).toList();
     });
   }
-  // 3. Προσθήκη ή αφαίρεση συμμετοχής (RSVP)
-  Future<void> toggleParticipation(String rideId, String userId, bool isGoing) async {
+
+  Future<void> toggleParticipation({
+    required String rideId,
+    required String userId,
+    required bool isGoing,
+    String? bikeName,
+  }) async {
     try {
+      final docRef = _firestore.collection('rides').doc(rideId);
+
       if (isGoing) {
-        // Αν πάει, τον προσθέτουμε στη λίστα (χωρίς να διπλοτυπωθεί)
-        await _firestore.collection('rides').doc(rideId).update({
-          'participants': FieldValue.arrayUnion([userId])
+        // Προσθήκη: Στέλνουμε το Map κατευθείαν
+        await docRef.update({
+          'participants': FieldValue.arrayUnion([
+            {'uid': userId, 'bike': bikeName ?? 'Rider'}
+          ])
         });
       } else {
-        // Αν το ακυρώσει, τον βγάζουμε από τη λίστα
-        await _firestore.collection('rides').doc(rideId).update({
-          'participants': FieldValue.arrayRemove([userId])
-        });
+        // Αφαίρεση: Διαβάζουμε τη λίστα και φιλτράρουμε χειροκίνητα
+        final doc = await docRef.get();
+        if (!doc.exists) return;
+
+        // Παίρνουμε τη λίστα και σιγουρευόμαστε ότι το Dart την βλέπει ως List<dynamic>
+        List<dynamic> participants = doc.data()?['participants'] ?? [];
+
+        // Βρίσκουμε το Map που θέλουμε να διώξουμε
+        // Προσοχή: Εδώ το p['uid'] είναι String, γι' αυτό και δεν πρέπει να χρησιμοποιούμε index
+        final entryToRemove = participants.firstWhere(
+              (p) => p is Map && p['uid'] == userId,
+          orElse: () => null,
+        );
+
+        if (entryToRemove != null) {
+          await docRef.update({
+            'participants': FieldValue.arrayRemove([entryToRemove])
+          });
+        }
       }
     } catch (e) {
+      // Εδώ πετάει το σφάλμα που βλέπεις στο log
       throw 'Failed to update participation: $e';
     }
   }
+
   // 4. Διαγραφή βόλτας
   Future<void> deleteRide(String rideId) async {
     try {

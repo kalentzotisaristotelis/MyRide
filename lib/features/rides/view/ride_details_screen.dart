@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_ride/features/rides/view/ride_chat_screen.dart';
+import '../../garage/controller/garage_controller.dart';
 import '../domain/ride_model.dart';
 import '../controller/ride_controller.dart';
 import '../../../core/map_utils.dart';
-import '../../profile/controller/user_controller.dart'; // ΝΕΟ IMPORT: Για τα προφίλ των συμμετεχόντων!
+import '../../profile/controller/user_controller.dart';
 
 class RideDetailsScreen extends ConsumerWidget {
   final Ride ride;
 
   const RideDetailsScreen({super.key, required this.ride});
 
-  // Η συνάρτηση που πετάει το παραθυράκι με τις επιλογές!
   Future<void> _showCancelDialog(BuildContext context, WidgetRef ref, String rideId) async {
     String? selectedReason = await showDialog<String>(
       context: context,
@@ -62,15 +63,16 @@ class RideDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Παρακολουθούμε το stream για να έχουμε live αλλαγές στη λίστα συμμετεχόντων
     final ridesList = ref.watch(ridesStreamProvider).valueOrNull ?? [];
-
     final currentRide = ridesList.firstWhere(
           (r) => r.id == ride.id,
       orElse: () => ride,
     );
 
     final user = FirebaseAuth.instance.currentUser;
-    final isGoing = user != null && currentRide.participants.contains(user.uid);
+    // Χρησιμοποιούμε τον getter participantIds που φτιάξαμε στο μοντέλο
+    final isGoing = user != null && currentRide.participantIds.contains(user.uid);
     final isCreator = user != null && user.uid == currentRide.creatorId;
 
     final dateStr = DateFormat('EEEE, dd MMMM yyyy').format(currentRide.date);
@@ -88,6 +90,20 @@ class RideDetailsScreen extends ConsumerWidget {
               tooltip: 'Ακύρωση Βόλτας',
               onPressed: () => _showCancelDialog(context, ref, currentRide.id),
             ),
+          if (isGoing) // Μόνο αν συμμετέχει βλέπει το chat
+            IconButton(
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => RideChatScreen(
+                      rideId: currentRide.id,
+                      rideTitle: currentRide.title,
+                    ),
+                  ),
+                );
+              },
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -97,14 +113,10 @@ class RideDetailsScreen extends ConsumerWidget {
           children: [
             Text(currentRide.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-
             _InfoRow(icon: Icons.calendar_today, text: dateStr, color: Colors.indigo),
             const SizedBox(height: 12),
-
             _InfoRow(icon: Icons.access_time, text: timeStr, color: Colors.orange),
             const SizedBox(height: 12),
-
-            // --- ΚΟΥΜΠΙ ΤΟΥ ΧΑΡΤΗ ---
             InkWell(
               onTap: () => MapUtils.openMap(currentRide.meetingPoint),
               child: Container(
@@ -138,15 +150,11 @@ class RideDetailsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // ------------------------------------------
-
             const SizedBox(height: 24),
             const Text('About this ride', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(currentRide.description, style: const TextStyle(fontSize: 16, height: 1.5)),
             const SizedBox(height: 32),
-
-            // --- ΝΕΑ ΕΜΦΑΝΙΣΗ ΣΥΜΜΕΤΕΧΟΝΤΩΝ ---
             Row(
               children: [
                 const Icon(Icons.people, color: Colors.indigo, size: 28),
@@ -158,17 +166,14 @@ class RideDetailsScreen extends ConsumerWidget {
               ],
             ),
             const Divider(height: 30, thickness: 1),
-
-            // Αν δεν υπάρχει κανείς, βγάζουμε μήνυμα, αλλιώς δείχνουμε τη λίστα!
             if (currentRide.participants.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text('Be the first to join this ride!', style: TextStyle(fontStyle: FontStyle.italic)),
               )
             else
-            // Παίρνουμε τη λίστα με τα IDs και για το καθένα φτιάχνουμε ένα _ParticipantTile
-              ...currentRide.participants.map((id) => _ParticipantTile(userId: id)).toList(),
-            // ---------------------------------
+            // Περνάμε όλο το Map {uid, bike} στο ParticipantTile
+              ...currentRide.participants.map((p) => _ParticipantTile(participantInfo: p)).toList(),
           ],
         ),
       ),
@@ -178,11 +183,59 @@ class RideDetailsScreen extends ConsumerWidget {
           child: ElevatedButton(
             onPressed: () {
               if (user == null) return;
-              ref.read(rideControllerProvider.notifier).toggleParticipation(
-                rideId: currentRide.id,
-                userId: user.uid,
-                isGoing: !isGoing,
-              );
+
+              if (isGoing) {
+                // Ακύρωση συμμετοχής
+                ref.read(rideControllerProvider.notifier).toggleParticipation(
+                  rideId: currentRide.id,
+                  userId: user.uid,
+                  isGoing: false,
+                );
+              } else {
+                // Διαδικασία Join με επιλογή μηχανής
+                final myBikes = ref.read(userBikesProvider(user.uid)).valueOrNull ?? [];
+
+                if (myBikes.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Πρόσθεσε μια μηχανή στο Garage σου για να συμμετάσχεις! 🏍️')),
+                  );
+                  return;
+                }
+
+                showModalBottomSheet(
+                  context: context,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  builder: (context) => Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Επίλεξε μηχανή για τη βόλτα',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 15),
+                        ...myBikes.map((bike) => ListTile(
+                          leading: const Icon(Icons.motorcycle, color: Colors.indigo),
+                          title: Text('${bike.make} ${bike.model}'),
+                          onTap: () {
+                            final bikeName = '${bike.make} ${bike.model}';
+                            ref.read(rideControllerProvider.notifier).toggleParticipation(
+                              rideId: currentRide.id,
+                              userId: user.uid,
+                              isGoing: true,
+                              bikeName: bikeName, // Στέλνουμε το όνομα της μηχανής
+                            );
+                            Navigator.pop(context);
+                          },
+                        )),
+                      ],
+                    ),
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: isGoing ? Colors.redAccent : Colors.green,
@@ -200,7 +253,6 @@ class RideDetailsScreen extends ConsumerWidget {
   }
 }
 
-// Ένα μικρό βοηθητικό widget για να μη γράφουμε τον ίδιο κώδικα
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -222,29 +274,22 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// Το νέο Widget που φτιάχνει τη γραμμή του κάθε αναβάτη
 class _ParticipantTile extends ConsumerWidget {
-  final String userId;
-  const _ParticipantTile({required this.userId});
+  final Map<String, dynamic> participantInfo;
+  const _ParticipantTile({required this.participantInfo});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Διαβάζουμε το προφίλ βάσει του ID!
+    final userId = participantInfo['uid'] as String;
+    final bikeName = participantInfo['bike'] as String? ?? 'Rider';
+
     final profileAsync = ref.watch(userProfileProvider(userId));
 
     return profileAsync.when(
-      loading: () => const ListTile(
-        leading: CircularProgressIndicator(),
-        title: Text('Φόρτωση αναβάτη...'),
-      ),
-      error: (e, st) => const ListTile(
-        leading: Icon(Icons.error),
-        title: Text('Σφάλμα φόρτωσης'),
-      ),
-      data: (user) {
-        final name = user?.displayName ?? 'Άγνωστος Αναβάτης';
-        final bio = user?.bio ?? '';
-        final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+      loading: () => const ListTile(title: Text('Φόρτωση αναβάτη...')),
+      error: (e, st) => const ListTile(title: Text('Σφάλμα')),
+      data: (userProfile) {
+        final name = userProfile?.displayName ?? 'Άγνωστος Αναβάτης';
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(vertical: 4),
@@ -252,12 +297,21 @@ class _ParticipantTile extends ConsumerWidget {
             radius: 25,
             backgroundColor: Colors.indigo.shade100,
             child: Text(
-              initial,
-              style: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, fontSize: 20),
+              name[0].toUpperCase(),
+              style: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
             ),
           ),
-          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          subtitle: bio.isNotEmpty ? Text(bio, maxLines: 1, overflow: TextOverflow.ellipsis) : null,
+          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Row(
+            children: [
+              const Icon(Icons.motorcycle, size: 16, color: Colors.orange),
+              const SizedBox(width: 6),
+              Text(
+                bikeName, // Δείχνουμε τη μηχανή που αποθηκεύτηκε στο ride document
+                style: TextStyle(color: Colors.indigo.shade900, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
         );
       },
     );

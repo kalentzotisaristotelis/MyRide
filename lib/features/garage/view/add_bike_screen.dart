@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../controller/garage_controller.dart';
 
 class AddBikeScreen extends ConsumerStatefulWidget {
@@ -13,11 +16,14 @@ class AddBikeScreen extends ConsumerStatefulWidget {
 class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Οι controllers για τα πεδία κειμένου
   final _makeController = TextEditingController();
   final _modelController = TextEditingController();
   final _yearController = TextEditingController();
   final _ccController = TextEditingController();
+  final _kmController = TextEditingController();
+
+  String? _imageUrl;
+  bool _isUploadingImage = false;
 
   @override
   void dispose() {
@@ -25,28 +31,56 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
     _modelController.dispose();
     _yearController.dispose();
     _ccController.dispose();
+    _kmController.dispose();
     super.dispose();
   }
 
-  // Η συνάρτηση που τρέχει όταν πατάς SAVE
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
+
+    if (pickedFile != null) {
+      setState(() => _isUploadingImage = true);
+      try {
+        final user = FirebaseAuth.instance.currentUser!;
+        final file = File(pickedFile.path);
+
+        final fileName = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final storageRef = FirebaseStorage.instance.ref().child('garage_photos/$fileName');
+
+        await storageRef.putFile(file);
+        final downloadUrl = await storageRef.getDownloadURL();
+
+        setState(() {
+          _imageUrl = downloadUrl;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
+        }
+      } finally {
+        setState(() => _isUploadingImage = false);
+      }
+    }
+  }
+
   void _saveBike() async {
     if (_formKey.currentState!.validate()) {
-      // 1. Βρες το ID του χρήστη που είναι συνδεδεμένος
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return; // Αν για κάποιο λόγο δεν υπάρχει, σταμάτα
+      if (user == null) return;
 
-      // 2. Κάλεσε τον Controller να αποθηκεύσει
       await ref.read(garageControllerProvider.notifier).addBike(
         userId: user.uid,
         make: _makeController.text.trim(),
         model: _modelController.text.trim(),
         yearStr: _yearController.text.trim(),
         ccStr: _ccController.text.trim(),
+        kmStr: _kmController.text.trim(),
+        imageUrl: _imageUrl,
       );
 
-      // 3. Αν όλα πήγαν καλά (ελέγχουμε αν υπάρχει ακόμα η οθόνη)
       if (mounted) {
-        Navigator.pop(context); // Κλείσε τη φόρμα και γύρνα πίσω
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bike added successfully! 🏍️')),
         );
@@ -56,7 +90,6 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Παρακολουθούμε αν φορτώνει για να δείξουμε κυκλάκι στο κουμπί
     final state = ref.watch(garageControllerProvider);
     final isLoading = state.isLoading;
 
@@ -68,6 +101,36 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              GestureDetector(
+                onTap: _isUploadingImage ? null : _pickAndUploadImage,
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[400]!),
+                    image: _imageUrl != null
+                        ? DecorationImage(image: NetworkImage(_imageUrl!), fit: BoxFit.cover)
+                        : null,
+                  ),
+                  child: _imageUrl == null
+                      ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isUploadingImage)
+                        const CircularProgressIndicator()
+                      else
+                        const Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      const Text('Add Bike Photo'),
+                    ],
+                  )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 24),
+
               TextFormField(
                 controller: _makeController,
                 decoration: const InputDecoration(labelText: 'Make (e.g. Honda)', border: OutlineInputBorder()),
@@ -82,6 +145,25 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
               ),
               const SizedBox(height: 16),
 
+              // --- ΧΙΛΙΟΜΕΤΡΑ ΜΕ VALIDATION > 0 ---
+              TextFormField(
+                controller: _kmController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                    labelText: 'Current Kilometers',
+                    prefixIcon: Icon(Icons.add_road),
+                    border: OutlineInputBorder()
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Enter mileage';
+                  final km = int.tryParse(val.trim());
+                  if (km == null) return 'Invalid number';
+                  if (km < 0) return 'Mileage cannot be negative';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
               Row(
                 children: [
                   Expanded(
@@ -91,17 +173,11 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
                       decoration: const InputDecoration(labelText: 'Year', border: OutlineInputBorder()),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) return 'Enter year';
-
-                        // Προσπαθούμε να το κάνουμε ακέραιο αριθμό
                         final year = int.tryParse(val.trim());
-                        if (year == null) return 'Must be a valid number';
-
-                        // Έλεγχος λογικής (π.χ. όχι μηχανή του 1800 ή του 2050)
+                        if (year == null) return 'Invalid';
                         final currentYear = DateTime.now().year;
-                        if (year < 1900 || year > currentYear + 1) {
-                          return 'Enter a valid year';
-                        }
-                        return null; // Όλα καλά!
+                        if (year < 1900 || year > currentYear + 1) return 'Invalid year';
+                        return null;
                       },
                     ),
                   ),
@@ -113,13 +189,10 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
                       decoration: const InputDecoration(labelText: 'CC', border: OutlineInputBorder()),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) return 'Enter CC';
-
-                        // Προσπαθούμε να το κάνουμε δεκαδικό αριθμό (double)
                         final cc = double.tryParse(val.trim());
-                        if (cc == null) return 'Must be a valid number';
-
-                        if (cc <= 0) return 'CC must be greater than 0';
-                        return null; // Όλα καλά!
+                        if (cc == null) return 'Invalid number';
+                        if (cc < 50 || cc > 5000) return 'CC must be 50 - 5000';
+                        return null;
                       },
                     ),
                   ),
@@ -128,7 +201,7 @@ class _AddBikeScreenState extends ConsumerState<AddBikeScreen> {
               const SizedBox(height: 32),
 
               ElevatedButton(
-                onPressed: isLoading ? null : _saveBike,
+                onPressed: (isLoading || _isUploadingImage) ? null : _saveBike,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepOrange,
                   foregroundColor: Colors.white,

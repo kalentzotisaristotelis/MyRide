@@ -37,8 +37,10 @@ class RideController extends StateNotifier<AsyncValue<void>> {
         description: description,
         date: date,
         meetingPoint: meetingPoint,
-        // ΛΟΓΙΚΗ: Αυτός που δημιουργεί τη βόλτα, μπαίνει αυτόματα στους συμμετέχοντες!
-        participants: [creatorId],
+        // ΠΡΟΣΟΧΗ: Ο δημιουργός μπαίνει ως Map {uid, bike}
+        participants: [
+          {'uid': creatorId, 'bike': 'Organizer'}
+        ],
       );
 
       await _repository.addRide(newRide);
@@ -47,18 +49,27 @@ class RideController extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
     }
   }
-  // Συνάρτηση για Συμμετοχή / Ακύρωση
+
+  // Συνάρτηση για Συμμετοχή / Ακύρωση (ΕΝΗΜΕΡΩΜΕΝΗ)
   Future<void> toggleParticipation({
     required String rideId,
     required String userId,
     required bool isGoing,
+    String? bikeName, // Η επιλεγμένη μηχανή από το UI
   }) async {
     try {
-      await _repository.toggleParticipation(rideId, userId, isGoing);
+      // Στέλνουμε το bikeName στον Repository
+      await _repository.toggleParticipation(
+        rideId: rideId,
+        userId: userId,
+        isGoing: isGoing,
+        bikeName: bikeName,
+      );
     } catch (e) {
       print("Error updating participation: $e");
     }
   }
+
   // Συνάρτηση για οριστική διαγραφή (Ακύρωση)
   Future<void> deleteRide(String rideId) async {
     state = const AsyncValue.loading();

@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/data/auth_repository.dart';
 
-// ΝΕΑ IMPORTS: Φέρνουμε τον Controller και την Οθόνη Επεξεργασίας
+// IMPORTS
 import '../controller/user_controller.dart';
 import 'edit_profile_screen.dart';
+import 'help_support_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -17,7 +18,7 @@ class ProfileScreen extends ConsumerWidget {
     final email = user?.email ?? 'Guest Rider';
     final uid = user?.uid ?? '';
 
-    // 2. ΝΕΟ: Παρακολουθούμε το προφίλ από τη Βάση (για Όνομα & Bio)
+    // 2. Παρακολουθούμε το προφίλ από τη Βάση (Riverpod Provider)
     final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
@@ -26,17 +27,19 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // Βάζουμε εδώ το κουμπάκι της Επεξεργασίας!
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.blueGrey),
             tooltip: 'Edit Profile',
-            onPressed: () {
+            onPressed: () async {
               final currentProfile = profileAsync.valueOrNull;
-              Navigator.of(context).push(
+              // Περιμένουμε να γυρίσει από την οθόνη επεξεργασίας
+              await Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => EditProfileScreen(existingProfile: currentProfile),
                 ),
               );
+              // ΜΟΛΙΣ ΓΥΡΙΣΕΙ: Λέμε στο Riverpod να ξαναδιαβάσει τη βάση για να δούμε τη νέα φώτο/όνομα
+              ref.invalidate(currentUserProfileProvider);
             },
           ),
         ],
@@ -45,11 +48,13 @@ class ProfileScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(child: Text('Error: $err')),
           data: (appUser) {
-            // Αν έχει φτιάξει προφίλ, παίρνουμε το όνομά του. Αλλιώς δείχνουμε το Email.
             final displayName = appUser?.displayName ?? email;
             final bio = appUser?.bio ?? 'No bio yet. Tap Edit to add one!';
 
-            // Το γράμμα για το κυκλάκι (παίρνει το πρώτο γράμμα του ονόματος)
+            // 3. ΠΑΙΡΝΟΥΜΕ ΤΗ ΦΩΤΟΓΡΑΦΙΑ
+            final photoUrl = appUser?.photoUrl;
+
+            // Το γράμμα (fallback αν δεν υπάρχει φώτο)
             final initialLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
 
             return Center(
@@ -57,19 +62,26 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   const SizedBox(height: 40),
 
-                  // Το Avatar
+                  // --- ΤΟ AVATAR (Διορθωμένο για να δείχνει τη φώτο) ---
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.deepOrange.shade100,
-                    child: Text(
+                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                    child: photoUrl == null
+                        ? Text(
                       initialLetter,
-                      style: const TextStyle(fontSize: 40, color: Colors.deepOrange, fontWeight: FontWeight.bold),
-                    ),
+                      style: const TextStyle(
+                          fontSize: 40,
+                          color: Colors.deepOrange,
+                          fontWeight: FontWeight.bold
+                      ),
+                    )
+                        : null,
                   ),
 
                   const SizedBox(height: 20),
 
-                  // Το Όνομα (Rider Name)
+                  // Το Όνομα
                   Text(
                     displayName,
                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
@@ -77,13 +89,17 @@ class ProfileScreen extends ConsumerWidget {
 
                   const SizedBox(height: 8),
 
-                  // Το Bio (ΝΕΟ!)
+                  // Το Bio
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32.0),
                     child: Text(
                       bio,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic
+                      ),
                     ),
                   ),
 
@@ -103,10 +119,15 @@ class ProfileScreen extends ConsumerWidget {
                     trailing: Icon(Icons.arrow_forward_ios, size: 16),
                   ),
                   const Divider(),
-                  const ListTile(
-                    leading: Icon(Icons.help_outline),
-                    title: Text('Help & Support'),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                  ListTile(
+                    leading: const Icon(Icons.help_outline),
+                    title: const Text('Help & Support'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const HelpSupportScreen()),
+                      );
+                    },
                   ),
 
                   const Spacer(),

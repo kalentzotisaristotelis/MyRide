@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_ride/features/garage/view/garage_screen.dart';
 import '../../garage/controller/garage_controller.dart';
 import '../../profile/controller/user_controller.dart';
 import '../../profile/view/edit_profile_screen.dart';
@@ -15,8 +17,9 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 1. Παρακολουθούμε ζωντανά (stream) τις μηχανές του χρήστη
-    final bikesAsyncValue = ref.watch(userBikesProvider);
-    final costAsyncValue = ref.watch(totalMaintenanceCostProvider);
+// Πρέπει να εισάγεις και το FirebaseAuth αν δεν το έχεις κάνει
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final bikesAsyncValue = ref.watch(userBikesProvider(uid));    final costAsyncValue = ref.watch(totalMaintenanceCostProvider);
     final ridesAsyncValue = ref.watch(ridesStreamProvider);
     final profileAsyncValue = ref.watch(currentUserProfileProvider);
 
@@ -43,81 +46,84 @@ class DashboardScreen extends ConsumerWidget {
       ),
 
       // 2. Ελέγχουμε την κατάσταση των δεδομένων (Loading, Error, Data)
+      // Βρες το body: bikesAsyncValue.when(...)
       body: bikesAsyncValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (bikes) {
-
-          // --- ΥΠΟΛΟΓΙΣΜΟΣ ΠΡΑΓΜΑΤΙΚΩΝ ΣΤΑΤΙΣΤΙΚΩΝ ---
-
-          // Α. Πόσες μηχανές έχουμε;
           final int totalBikes = bikes.length;
-
-          // Β. Πόσα είναι τα συνολικά κυβικά; (Προσθέτει τα CC όλων των μηχανών)
           final double totalCc = bikes.fold(0, (sum, bike) => sum + bike.cc);
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Garage Overview',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
+          // ΠΡΟΣΘΗΚΗ: SingleChildScrollView για να μπορείς να σκρολάρεις προς τα κάτω
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Garage Overview',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
 
-                // Η κάρτα με το σύνολο των μηχανών
-                _StatCard(
-                  title: 'Total Bikes',
-                  value: totalBikes.toString(),
-                  icon: Icons.two_wheeler,
-                  color: Colors.deepOrange,
-                ),
-                const SizedBox(height: 16),
+                  // Total Bikes Card
+                  _StatCard(
+                    title: 'Total Bikes',
+                    value: totalBikes.toString(),
+                    icon: Icons.two_wheeler,
+                    color: Colors.deepOrange,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const GarageScreen()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-                // Η κάρτα με τη συνολική δύναμη σε κυβικά (CC)
-                _StatCard(
-                  title: 'Total CC Power',
-                  value: '${totalCc.toInt()} cc',
-                  icon: Icons.speed,
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 16),
+                  // Total CC Card
+                  _StatCard(
+                    title: 'Total CC Power',
+                    value: '${totalCc.toInt()} cc',
+                    icon: Icons.speed,
+                    color: Colors.blue,
+                  ),
+                  const SizedBox(height: 16),
 
-                // Η νέα κάρτα για τα Λεφτά!
-                costAsyncValue.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, st) => Text('Error loading cost: $e'),
-                  data: (totalCost) {
-                    return _StatCard(
+                  // Maintenance Cost Card
+                  costAsyncValue.when(
+                    loading: () => const CircularProgressIndicator(),
+                    error: (e, st) => Text('Error: $e'),
+                    data: (totalCost) => _StatCard(
                       title: 'Total Maintenance Cost',
                       value: '€${totalCost.toStringAsFixed(2)}',
                       icon: Icons.account_balance_wallet,
-                      color: Colors.green, // Πράσινο για τα λεφτά!
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                ridesAsyncValue.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, st) => Text('Error loading rides: $e'),
-                  data: (rides) {
-                    return _StatCard(
-                      title: 'Community Rides', // Ο τίτλος της κάρτας
-                      value: rides.length.toString(), // Πόσες βόλτες υπάρχουν;
-                      icon: Icons.map, // Ωραίο εικονίδιο χάρτη/βόλτας
-                      color: Colors.indigo, // Το χρώμα της κοινότητας
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Community Rides Card
+                  ridesAsyncValue.when(
+                    loading: () => const CircularProgressIndicator(),
+                    error: (e, st) => Text('Error: $e'),
+                    data: (rides) => _StatCard(
+                      title: 'Community Rides',
+                      value: rides.length.toString(),
+                      icon: Icons.map,
+                      color: Colors.indigo,
                       onTap: () {
-                        // Όταν την πατάς, σε πάει στην οθόνη με τις βόλτες!
                         Navigator.of(context).push(
                           MaterialPageRoute(builder: (context) => const RidesScreen()),
                         );
                       },
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  ),
+
+                  // Μια μικρή απόσταση στο τέλος για να μην κολλάει η τελευταία κάρτα κάτω
+                  const SizedBox(height: 30),
+                ],
+              ),
             ),
           );
         },

@@ -5,7 +5,8 @@ class Ride {
   final String description; // Λεπτομέρειες, ρυθμός, στάσεις
   final DateTime date; // Πότε θα γίνει
   final String meetingPoint; // Πού μαζευόμαστε
-  final List<String> participants; // Λίστα με τα IDs αυτών που πάτησαν "Θα πάω"
+  // Λίστα από Maps για να αποθηκεύουμε {'uid': '...', 'bike': '...'}
+  final List<Map<String, dynamic>> participants;
 
   Ride({
     required this.id,
@@ -26,8 +27,21 @@ class Ride {
       description: map['description'] ?? '',
       date: DateTime.fromMillisecondsSinceEpoch(map['date'] ?? 0),
       meetingPoint: map['meetingPoint'] ?? '',
-      // Διαβάζουμε τη λίστα των συμμετεχόντων με ασφάλεια
-      participants: List<String>.from(map['participants'] ?? []),
+
+      // ΑΣΦΑΛΗΣ ΑΝΑΓΝΩΣΗ ΣΥΜΜΕΤΕΧΟΝΤΩΝ:
+      // Ελέγχουμε αν κάθε στοιχείο είναι Map ή String (για αποφυγή σφαλμάτων τύπου)
+      participants: (map['participants'] as List<dynamic>?)?.map((item) {
+        if (item is Map) {
+          // Αν είναι ήδη Map (νέο format), το παίρνουμε ως έχει
+          return Map<String, dynamic>.from(item);
+        } else {
+          // Αν είναι String (παλιό format), το μετατρέπουμε σε Map δυναμικά
+          return {
+            'uid': item.toString(),
+            'bike': 'Rider', // Default τιμή για παλιά δεδομένα
+          };
+        }
+      }).toList() ?? [],
     );
   }
 
@@ -42,4 +56,9 @@ class Ride {
       'participants': participants,
     };
   }
+
+  // Helper method: Παίρνουμε μόνο τα IDs των συμμετεχόντων
+  // Χρήση: if (ride.participantIds.contains(user.uid)) ...
+  List<String> get participantIds =>
+      participants.map((p) => p['uid'] as String).toList();
 }

@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../controller/garage_controller.dart';
 import 'add_bike_screen.dart';
 import 'edit_bike_screen.dart';
 import '../../service_history/view/service_history_screen.dart';
 
-// ΑΛΛΑΓΗ: Έγινε ConsumerWidget
 class GarageScreen extends ConsumerWidget {
   const GarageScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Παρακολουθούμε τον provider που φτιάξαμε
-    final bikesAsyncValue = ref.watch(userBikesProvider);
+// Πρέπει να εισάγεις και το FirebaseAuth αν δεν το έχεις κάνει
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final bikesAsyncValue = ref.watch(userBikesProvider(uid));
 
     return Scaffold(
       appBar: AppBar(
@@ -20,18 +21,10 @@ class GarageScreen extends ConsumerWidget {
         backgroundColor: Colors.deepOrange,
         foregroundColor: Colors.white,
       ),
-
-      // 2. Το body αλλάζει ανάλογα με την κατάσταση (Loading, Error, Data)
       body: bikesAsyncValue.when(
-        // Α. Αν φορτώνει ακόμα -> Κυκλάκι
         loading: () => const Center(child: CircularProgressIndicator()),
-
-        // Β. Αν έγινε λάθος -> Κόκκινο μήνυμα
         error: (err, stack) => Center(child: Text('Error: $err')),
-
-        // Γ. Αν ήρθαν τα δεδομένα (bikes)
         data: (bikes) {
-          // Αν η λίστα είναι άδεια
           if (bikes.isEmpty) {
             return const Center(
               child: Column(
@@ -46,7 +39,6 @@ class GarageScreen extends ConsumerWidget {
             );
           }
 
-          // Αν έχει μηχανές, φτιάξε λίστα
           return ListView.builder(
             padding: const EdgeInsets.all(8),
             itemCount: bikes.length,
@@ -54,40 +46,20 @@ class GarageScreen extends ConsumerWidget {
               final bike = bikes[index];
 
               return Dismissible(
-                // Το κλειδί είναι ΑΠΑΡΑΙΤΗΤΟ για να ξέρει το Flutter ποιο σβήνει
                 key: Key(bike.id),
-
-                // Σέρνουμε από δεξιά προς τα αριστερά (End -> Start)
                 direction: DismissDirection.endToStart,
-
-                // Το κόκκινο φόντο που φαίνεται όταν σέρνεις
                 background: Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
                   color: Colors.red,
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
-
-                // Τι συμβαίνει όταν ολοκληρωθεί το σύρσιμο
                 onDismissed: (direction) {
-                  // 1. Καλούμε τον controller να σβήσει τη μηχανή
                   ref.read(garageControllerProvider.notifier).deleteBike(bike.id);
-
-                  // 2. Δείχνουμε μήνυμα επιβεβαίωσης
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${bike.make} deleted'),
-                      action: SnackBarAction(
-                        label: 'UNDO',
-                        onPressed: () {
-                          // Εδώ θα μπορούσαμε να βάλουμε λογική επαναφοράς (future feature)
-                        },
-                      ),
-                    ),
+                    SnackBar(content: Text('${bike.make} deleted')),
                   );
                 },
-
-                // Εδώ είναι η κάρτα που είχαμε πριν
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   decoration: BoxDecoration(
@@ -111,19 +83,38 @@ class GarageScreen extends ConsumerWidget {
                       child: Container(
                         decoration: const BoxDecoration(
                           border: Border(
-                            left: BorderSide(color: Colors.deepOrange, width: 6), // Η πορτοκαλί ρίγα
+                            left: BorderSide(color: Colors.deepOrange, width: 6),
                           ),
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+                          // --- Η ΑΛΛΑΓΗ ΣΤΟ LEADING ΓΙΑ ΤΗ ΦΩΤΟΓΡΑΦΙΑ ---
                           leading: Container(
-                            padding: const EdgeInsets.all(8),
+                            width: 60,
+                            height: 60,
                             decoration: BoxDecoration(
                               color: Colors.grey[100],
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.two_wheeler, color: Colors.black87, size: 28),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: bike.imageUrl != null && bike.imageUrl!.isNotEmpty
+                                  ? Image.network(
+                                bike.imageUrl!,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                                },
+                                errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.broken_image, color: Colors.grey),
+                              )
+                                  : const Icon(Icons.two_wheeler, color: Colors.black87, size: 28),
+                            ),
                           ),
+                          // ----------------------------------------------
+
                           title: Text(
                             '${bike.make} ${bike.model}',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -142,22 +133,20 @@ class GarageScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          // Αλλάζουμε το trailing σε IconButton για το Edit
                           trailing: IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.deepOrange),
+                            icon: const Icon(Icons.tire_repair, color: Colors.deepOrange),
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => EditBikeScreen(bike: bike),
+                                  builder: (context) => ServiceHistoryScreen(bike: bike),
                                 ),
                               );
                             },
                           ),
-                          // Όταν πατάς ΟΛΗ την κάρτα, σε πάει στο Ιστορικό
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => ServiceHistoryScreen(bike: bike),
+                                builder: (context) => EditBikeScreen(bike: bike),
                               ),
                             );
                           },
@@ -171,7 +160,6 @@ class GarageScreen extends ConsumerWidget {
           );
         },
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepOrange,
         child: const Icon(Icons.add, color: Colors.white),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_controller.dart';
-import '../../dashboard/view/dashboard_screen.dart';
+import 'register_screen.dart'; // Βεβαιώσου ότι έχεις κάνει import την οθόνη εγγραφής
 
-// ΑΛΛΑΓΗ 1: Έγινε ConsumerStatefulWidget για να "ακούει" Riverpod
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -11,7 +10,6 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-// ΑΛΛΑΓΗ 2: Έγινε ConsumerState
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -24,10 +22,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  // ΑΛΛΑΓΗ 3: Συνάρτηση που καλείται όταν πατηθεί το κουμπί
   void _onLoginPressed() {
     if (_formKey.currentState!.validate()) {
-      // Καλούμε τον Controller να κάνει login
       ref.read(authControllerProvider.notifier).login(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -37,10 +33,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ΑΛΛΑΓΗ 4: "Ακούμε" την κατάσταση του Controller
-    // Αν αλλάξει (π.χ. βγάλει λάθος), δείχνουμε μήνυμα
+    // Ακούμε για λάθη κατά τη σύνδεση
     ref.listen<AsyncValue>(authControllerProvider, (previous, next) {
-      // Αν υπάρχει λάθος, δείξε κόκκινη μπάρα (SnackBar)
       if (next.hasError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -51,7 +45,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     });
 
-    // ΑΛΛΑΓΗ 5: Ελέγχουμε αν φορτώνει τώρα
     final state = ref.watch(authControllerProvider);
     final isLoading = state.isLoading;
 
@@ -117,21 +110,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ΑΛΛΑΓΗ 6: Το κουμπί αλλάζει αν φορτώνει
                     ElevatedButton(
-                      // Αν φορτώνει, απενεργοποιούμε το κουμπί (null)
                       onPressed: isLoading ? null : _onLoginPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepOrange,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white) // Δείξε κυκλάκι
-                          : const Text( // Αλλιώς δείξε κείμενο
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                          : const Text(
                         'LOGIN',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // --- ΠΡΟΣΘΗΚΗ: REGISTER HERE ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Don't have an account?"),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Register here',
+                            style: TextStyle(
+                              color: Colors.deepOrange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
